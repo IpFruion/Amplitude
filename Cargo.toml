@@ -1,0 +1,3 @@
+[workspace]
+
+members = ["amplitude", "amplitude-derive", "tracing-amplitude"]

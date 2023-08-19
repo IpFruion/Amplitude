@@ -1,0 +1,22 @@
+[package]
+name = "amplitude-derive"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[lib]
+proc-macro = true
+
+[[test]]
+name = "tests"
+path = "tests/runner.rs"
+
+[dependencies]
+syn = "1.0.109"
+quote = "1.0.33"
+proc-macro2 = "1.0.66"
+amplitude = { path = "../amplitude/" }
+
+[dev-dependencies]
+trybuild = "1.0.83"
+syn = { version = "1.0.109", features = ["full", "extra-traits"] }
