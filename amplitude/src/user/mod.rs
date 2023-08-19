@@ -8,10 +8,12 @@ use crate::event::Number;
 ///
 /// # Examples
 /// ```
+/// use amplitude::user::EventOptions;
+///
 /// let options = EventOptions {
 ///     device_id: Some("someId".to_owned()),
-///     ...Default::default(),
-/// }
+///     ..Default::default()
+/// };
 ///
 /// ```
 #[derive(Debug, Default, Serialize)]
