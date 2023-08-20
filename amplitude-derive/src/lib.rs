@@ -1,3 +1,4 @@
+mod attrs;
 mod expand;
 use proc_macro::TokenStream;
 use quote::ToTokens;
@@ -12,12 +13,12 @@ use syn::{parse_macro_input, DeriveInput};
 ///
 /// ## Note on Serde attributes
 ///
-/// The reason that we do not use `serde`'s [Serialize] is because we want grabbing the parts for
+/// The reason that we do not use `serde`'s [serde::Serialize] is because we want grabbing the parts for
 /// events to be infalliable.
 ///
 /// However some serde properties are planning on being supported i.e. `#[serde(rename = "my_event")]` or `#[ampli(rename = "my_event)]`. It will prioritize the `#[ampli]` attribute.
 ///
-#[proc_macro_derive(Event)]
+#[proc_macro_derive(Event, attributes(ampli))]
 pub fn event_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     expand::event_derive(input)

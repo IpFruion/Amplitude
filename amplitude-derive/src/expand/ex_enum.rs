@@ -2,17 +2,18 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{DataEnum, Fields, Generics, Ident, Variant};
 
+use crate::attrs::AttrOptions;
+
 use super::prop::{event_props, into_event_props};
 
 pub fn event_enum(ident: Ident, generics: Generics, s: DataEnum) -> syn::Result<TokenStream> {
-    let (name_match_variants, into_event_props_variants): (Vec<_>, Vec<_>) = s
-        .variants
-        .iter()
-        .map(|v| {
-            let (name_variant, props_variant) = variant_match_builder(v);
-            (name_variant, props_variant)
-        })
-        .unzip();
+    let mut name_match_variants = Vec::new();
+    let mut into_event_props_variants = Vec::new();
+    for v in s.variants.iter() {
+        let (name_variant, props_variant) = variant_match_builder(v)?;
+        name_match_variants.push(name_variant);
+        into_event_props_variants.push(props_variant);
+    }
 
     Ok(quote! {
         impl amplitude::Event for #ident #generics {
@@ -67,12 +68,14 @@ impl VariantMatch {
         (name_variant, props_variant)
     }
 
-    fn named_fields<'a, F: Iterator<Item = &'a Ident>>(
+    fn named_fields<'a, F: Iterator<Item = (&'a Ident, AttrOptions)>>(
         ident: &Ident,
         f: F,
     ) -> (VariantMatch, VariantMatch) {
         let left_hand_match = quote! { Self::#ident };
-        let (ignored, named): (Vec<_>, Vec<_>) = f.map(|ident| (quote!(#ident: _), ident)).unzip();
+        let (ignored, named): (Vec<_>, Vec<_>) = f
+            .map(|(ident, opts)| (quote!(#ident: _), (ident, opts)))
+            .unzip();
         let name_variant = Self::name_variant(
             quote! {
                 #left_hand_match{
@@ -81,11 +84,12 @@ impl VariantMatch {
             },
             ident,
         );
-        let props = event_props(named.iter().map(|i| *i), false);
+        let props = event_props(named.iter(), false);
+        let named_idents = named.iter().map(|(i, _)| i);
         let props_variant = Self {
             left_hand_side: quote! {
                #left_hand_match{
-                    #(#named,)*
+                    #(#named_idents,)*
                 }
             },
             right_hand_side: props,
@@ -116,22 +120,31 @@ impl VariantMatch {
     }
 }
 
-fn variant_match_builder(v: &Variant) -> (VariantMatch, VariantMatch) {
+fn variant_match_builder(v: &Variant) -> syn::Result<(VariantMatch, VariantMatch)> {
     let ident = &v.ident;
-    match &v.fields {
+    Ok(match &v.fields {
         Fields::Unit => VariantMatch::empty_fields(ident),
         Fields::Named(f) => {
-            VariantMatch::named_fields(ident, f.named.iter().map(|f| f.ident.as_ref().unwrap()))
+            let fields = f
+                .named
+                .iter()
+                .map(|f| {
+                    let ident = f.ident.as_ref().unwrap();
+                    let attrs = AttrOptions::parse(&f.attrs)?;
+                    Ok((ident, attrs))
+                })
+                .collect::<syn::Result<Vec<_>>>()?;
+            VariantMatch::named_fields(ident, fields.into_iter())
         }
         Fields::Unnamed(f) => VariantMatch::unamed_fields(ident, f.unnamed.len()),
-    }
+    })
 }
 
 fn gen_unamed_field_ident(i: usize) -> Ident {
     let mut i = i;
     let mut s = String::new();
     loop {
-        let c = (i % 26) as u8 + 'a' as u8;
+        let c = (i % 26) as u8 + b'a';
         s.push(c as char);
         if i / 26 == 0 {
             break;

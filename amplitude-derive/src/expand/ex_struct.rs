@@ -2,15 +2,37 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{DataStruct, Fields, Generics, Ident};
 
+use crate::attrs::{symbol::RENAME, AttrOptions};
+
 use super::prop::event_props;
 
-pub fn event_struct(ident: Ident, generics: Generics, s: DataStruct) -> syn::Result<TokenStream> {
-    let ident_to_string = ident.to_string();
+pub fn event_struct(
+    ident: Ident,
+    generics: Generics,
+    s: DataStruct,
+    attrs: AttrOptions,
+) -> syn::Result<TokenStream> {
+    let ident_to_string = if let Some(rename_opt) = attrs.get(&RENAME) {
+        rename_opt.str_value.clone().unwrap()
+    } else {
+        ident.to_string()
+    };
     let event_props = match &s.fields {
         Fields::Unit => {
             quote! { Vec::new() }
         }
-        Fields::Named(f) => event_props(f.named.iter().map(|f| f.ident.as_ref().unwrap()), true),
+        Fields::Named(f) => {
+            let fields = f
+                .named
+                .iter()
+                .map(|f| {
+                    let ident = f.ident.as_ref().unwrap();
+                    let attrs = AttrOptions::parse(&f.attrs)?;
+                    Ok((ident, attrs))
+                })
+                .collect::<syn::Result<Vec<_>>>()?;
+            event_props(fields.iter(), true)
+        }
         Fields::Unnamed(_) => Err(syn::Error::new(
             ident.span(),
             "No Amplitude Event property support for unnamed fields",

@@ -2,11 +2,13 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::Ident;
 
-pub fn event_props<'a, I: Iterator<Item = &'a Ident>>(
+use crate::attrs::{symbol::RENAME, AttrOptions};
+
+pub fn event_props<'a, I: Iterator<Item = &'a (&'a Ident, AttrOptions)>>(
     fields: I,
     contain_self: bool,
 ) -> TokenStream {
-    let expanded_props = fields.map(|i| event_prop(i, contain_self));
+    let expanded_props = fields.map(|(i, opts)| event_prop(i, opts, contain_self));
     quote! {
         vec![
             #(#expanded_props,)*
@@ -14,8 +16,12 @@ pub fn event_props<'a, I: Iterator<Item = &'a Ident>>(
     }
 }
 
-fn event_prop(ident: &Ident, contain_self: bool) -> TokenStream {
-    let ident_to_string = ident.to_string();
+fn event_prop(ident: &Ident, attrs: &AttrOptions, contain_self: bool) -> TokenStream {
+    let ident_to_string = if let Some(rename_opt) = attrs.get(&RENAME) {
+        rename_opt.str_value.clone().unwrap()
+    } else {
+        ident.to_string()
+    };
     let value = if contain_self {
         quote!(self.#ident)
     } else {

@@ -12,11 +12,11 @@ name = "tests"
 path = "tests/runner.rs"
 
 [dependencies]
-syn = "1.0.109"
+syn = { version = "2.0.29", features = ["full"] }
 quote = "1.0.33"
 proc-macro2 = "1.0.66"
 amplitude = { path = "../amplitude/" }
 
 [dev-dependencies]
+syn = { version = "2.0.29", features = ["full", "extra-traits"] }
 trybuild = "1.0.83"
-syn = { version = "1.0.109", features = ["full", "extra-traits"] }

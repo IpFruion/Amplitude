@@ -1,7 +1,7 @@
 use tracing::Metadata;
 use tracing_subscriber::layer::{Context, Filter};
 
-/// Creates a [Filter] to remove Amplitude Events from [Layer] or [Subscriber]
+/// Creates a [tracing_subscriber::layer::Filter] to remove Amplitude Events from [tracing_subscriber::layer::Layer] or [tracing::Subscriber]
 pub struct RemoveAmplitudeEvents;
 
 impl<S> Filter<S> for RemoveAmplitudeEvents {
