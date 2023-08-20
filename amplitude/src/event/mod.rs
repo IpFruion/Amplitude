@@ -3,6 +3,7 @@ use serde::Serialize;
 /// Amplitude Event Property
 ///
 /// Contains the name of the property and the value
+#[derive(Debug, PartialEq)]
 pub struct Property {
     pub name: String,
     pub value: PropertyValue,

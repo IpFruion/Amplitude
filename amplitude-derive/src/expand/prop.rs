@@ -1,30 +1,43 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Field, Fields};
+use syn::Ident;
 
-pub fn event_props(fields: &Fields) -> syn::Result<TokenStream> {
-    let expanded_props = fields
-        .iter()
-        .map(event_prop)
-        .collect::<syn::Result<Vec<_>>>()?;
-
-    let expanded = quote! {
+pub fn event_props<'a, I: Iterator<Item = &'a Ident>>(
+    fields: I,
+    contain_self: bool,
+) -> TokenStream {
+    let expanded_props = fields.map(|i| event_prop(i, contain_self));
+    quote! {
         vec![
             #(#expanded_props,)*
         ]
-    };
-
-    Ok(expanded.into())
+    }
 }
 
-fn event_prop(field: &Field) -> syn::Result<TokenStream> {
-    // The expectation is that this is Named
-    let ident = field.ident.as_ref().unwrap();
+fn event_prop(ident: &Ident, contain_self: bool) -> TokenStream {
     let ident_to_string = ident.to_string();
-    Ok(quote! {amplitude::event::Property {
+    let value = if contain_self {
+        quote!(self.#ident)
+    } else {
+        quote!(#ident)
+    };
+    quote! {amplitude::event::Property {
         name: #ident_to_string.to_owned(),
-        value: self.#ident.into(),
-    }})
+        value: #value.into(),
+    }}
+}
+
+pub fn into_event_props<'a, I: Iterator<Item = &'a Ident>>(mut fields: I) -> TokenStream {
+    // Must be at least one I think handle error?
+    let first = fields.next().unwrap();
+    let props = quote! {
+        {
+            let mut props = amplitude::Event::into_event_props(#first);
+            props
+        }
+    };
+
+    props
 }
 
 #[cfg(test)]

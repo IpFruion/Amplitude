@@ -10,7 +10,7 @@ pub fn event_struct(ident: Ident, generics: Generics, s: DataStruct) -> syn::Res
         Fields::Unit => {
             quote! { Vec::new() }
         }
-        Fields::Named(_) => event_props(&s.fields)?,
+        Fields::Named(f) => event_props(f.named.iter().map(|f| f.ident.as_ref().unwrap()), true),
         Fields::Unnamed(_) => Err(syn::Error::new(
             ident.span(),
             "No Amplitude Event property support for unnamed fields",
