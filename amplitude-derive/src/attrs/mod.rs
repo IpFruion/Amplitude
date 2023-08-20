@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 
 use proc_macro2::Span;
-use syn::{punctuated::Punctuated, spanned::Spanned, AttrStyle, Attribute, Expr, Lit, Path, Token};
+use syn::{
+    punctuated::Punctuated, spanned::Spanned, AttrStyle, Attribute, Expr, Ident, Lit, Path, Token,
+};
 
 use self::symbol::{Symbol, AMPLI, RENAME};
 
-pub mod symbol;
+mod symbol;
 
 /// Attribute Options corresponding to amplitude derive options.
 /// See [Symbol] for more information
@@ -22,8 +24,11 @@ impl AttrOptions {
         Ok(Self(options))
     }
 
-    pub fn get(&self, s: &Symbol) -> Option<&AttrOption> {
-        self.0.get(s)
+    pub fn rename_str(&self, original_ident: &Ident) -> String {
+        match self.0.get(&RENAME) {
+            Some(r) => r.str_value.as_ref().unwrap().clone(),
+            None => original_ident.to_string(),
+        }
     }
 }
 

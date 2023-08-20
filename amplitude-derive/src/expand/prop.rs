@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::Ident;
 
-use crate::attrs::{symbol::RENAME, AttrOptions};
+use crate::attrs::AttrOptions;
 
 pub fn event_props<'a, I: Iterator<Item = &'a (&'a Ident, AttrOptions)>>(
     fields: I,
@@ -17,11 +17,7 @@ pub fn event_props<'a, I: Iterator<Item = &'a (&'a Ident, AttrOptions)>>(
 }
 
 fn event_prop(ident: &Ident, attrs: &AttrOptions, contain_self: bool) -> TokenStream {
-    let ident_to_string = if let Some(rename_opt) = attrs.get(&RENAME) {
-        rename_opt.str_value.clone().unwrap()
-    } else {
-        ident.to_string()
-    };
+    let ident_to_string = attrs.rename_str(ident);
     let value = if contain_self {
         quote!(self.#ident)
     } else {
@@ -39,6 +35,7 @@ pub fn into_event_props<'a, I: Iterator<Item = &'a Ident>>(mut fields: I) -> Tok
     let props = quote! {
         {
             let mut props = amplitude::Event::into_event_props(#first);
+            #(props.extend(amplitude::Event::into_event_props(#fields));)*
             props
         }
     };

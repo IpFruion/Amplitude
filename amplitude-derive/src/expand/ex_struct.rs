@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{DataStruct, Fields, Generics, Ident};
 
-use crate::attrs::{symbol::RENAME, AttrOptions};
+use crate::attrs::AttrOptions;
 
 use super::prop::event_props;
 
@@ -12,11 +12,7 @@ pub fn event_struct(
     s: DataStruct,
     attrs: AttrOptions,
 ) -> syn::Result<TokenStream> {
-    let ident_to_string = if let Some(rename_opt) = attrs.get(&RENAME) {
-        rename_opt.str_value.clone().unwrap()
-    } else {
-        ident.to_string()
-    };
+    let ident_to_string = attrs.rename_str(&ident);
     let event_props = match &s.fields {
         Fields::Unit => {
             quote! { Vec::new() }

@@ -48,19 +48,22 @@ impl ToTokens for VariantMatch {
 }
 
 impl VariantMatch {
-    fn name_variant(left_hand_match: TokenStream, ident: &Ident) -> VariantMatch {
-        let ident_to_string = ident.to_string();
-        let ident_to_string = quote! { #ident_to_string };
+    fn name_variant(
+        left_hand_match: TokenStream,
+        ident: &Ident,
+        attrs: &AttrOptions,
+    ) -> VariantMatch {
+        let ident_to_string = attrs.rename_str(ident);
         VariantMatch {
             left_hand_side: left_hand_match,
-            right_hand_side: ident_to_string,
+            right_hand_side: quote! { #ident_to_string },
         }
     }
 
-    fn empty_fields(ident: &Ident) -> (VariantMatch, VariantMatch) {
+    fn empty_fields(ident: &Ident, attrs: &AttrOptions) -> (VariantMatch, VariantMatch) {
         let left_hand_match = quote! { Self::#ident };
 
-        let name_variant = Self::name_variant(left_hand_match.clone(), ident);
+        let name_variant = Self::name_variant(left_hand_match.clone(), ident, attrs);
         let props_variant = VariantMatch {
             left_hand_side: left_hand_match,
             right_hand_side: quote!(Vec::new()),
@@ -71,6 +74,7 @@ impl VariantMatch {
     fn named_fields<'a, F: Iterator<Item = (&'a Ident, AttrOptions)>>(
         ident: &Ident,
         f: F,
+        attrs: &AttrOptions,
     ) -> (VariantMatch, VariantMatch) {
         let left_hand_match = quote! { Self::#ident };
         let (ignored, named): (Vec<_>, Vec<_>) = f
@@ -83,6 +87,7 @@ impl VariantMatch {
                 }
             },
             ident,
+            attrs,
         );
         let props = event_props(named.iter(), false);
         let named_idents = named.iter().map(|(i, _)| i);
@@ -97,7 +102,11 @@ impl VariantMatch {
         (name_variant, props_variant)
     }
 
-    fn unamed_fields(ident: &Ident, amount: usize) -> (VariantMatch, VariantMatch) {
+    fn unamed_fields(
+        ident: &Ident,
+        amount: usize,
+        attrs: &AttrOptions,
+    ) -> (VariantMatch, VariantMatch) {
         let left_hand_match = quote! { Self::#ident };
         let (ignored, named): (Vec<_>, Vec<_>) = (0..amount)
             .map(|i| (quote!(_), gen_unamed_field_ident(i)))
@@ -107,6 +116,7 @@ impl VariantMatch {
                 #left_hand_match(#(#ignored,)*)
             },
             ident,
+            attrs,
         );
 
         let props = into_event_props(named.iter());
@@ -121,9 +131,10 @@ impl VariantMatch {
 }
 
 fn variant_match_builder(v: &Variant) -> syn::Result<(VariantMatch, VariantMatch)> {
+    let attrs = AttrOptions::parse(&v.attrs)?;
     let ident = &v.ident;
     Ok(match &v.fields {
-        Fields::Unit => VariantMatch::empty_fields(ident),
+        Fields::Unit => VariantMatch::empty_fields(ident, &attrs),
         Fields::Named(f) => {
             let fields = f
                 .named
@@ -134,9 +145,9 @@ fn variant_match_builder(v: &Variant) -> syn::Result<(VariantMatch, VariantMatch
                     Ok((ident, attrs))
                 })
                 .collect::<syn::Result<Vec<_>>>()?;
-            VariantMatch::named_fields(ident, fields.into_iter())
+            VariantMatch::named_fields(ident, fields.into_iter(), &attrs)
         }
-        Fields::Unnamed(f) => VariantMatch::unamed_fields(ident, f.unnamed.len()),
+        Fields::Unnamed(f) => VariantMatch::unamed_fields(ident, f.unnamed.len(), &attrs),
     })
 }
 
