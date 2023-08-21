@@ -4,11 +4,15 @@ This is the unofficial [Amplitude](https://amplitude.com/) SDK for Rust.
 
 The three pieces of this SDK are
 
-- `amplitude` crate which has the underlying `Event` trait and user `EventOptions` (user properties)
+- [`amplitude`](#amplitude) crate which has the underlying `Event` trait and user `EventOptions` (user properties)
 - [`amplitude-derive`](#amplitude-event-derive) crate that implements the derive for `Event`
-  -- [Structs](#structs)
-  -- [Enums](#enums)
-- `tracing-amplitude` crate provides an interface with the [tracing](https://docs.rs/tracing/latest/tracing/) and [tracing_subscriber](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/) crates to `identify` and `track` amplitude events.
+  - [Structs](#structs)
+  - [Enums](#enums)
+- [`tracing-amplitude`](#wip-tracing-amplitude) crate provides an interface with the [tracing](https://docs.rs/tracing/latest/tracing/) and [tracing_subscriber](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/) crates to `identify` and `track` amplitude events.
+
+## Amplitude
+
+This crate adds the basic types and structures for creating Amplitude events. The key types are `Event` (event name and properties) and `EventOptions` (user properties).
 
 ## Amplitude Event Derive
 
