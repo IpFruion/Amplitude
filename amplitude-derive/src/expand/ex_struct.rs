@@ -4,7 +4,7 @@ use syn::{DataStruct, Fields, Generics, Ident};
 
 use crate::attrs::AttrOptions;
 
-use super::prop::event_props;
+use super::prop::{event_props, FieldProp};
 
 pub fn event_struct(
     ident: Ident,
@@ -21,11 +21,7 @@ pub fn event_struct(
             let fields = f
                 .named
                 .iter()
-                .map(|f| {
-                    let ident = f.ident.as_ref().unwrap();
-                    let attrs = AttrOptions::parse(&f.attrs)?;
-                    Ok((ident, attrs))
-                })
+                .map(FieldProp::try_from)
                 .collect::<syn::Result<Vec<_>>>()?;
             event_props(fields.iter(), true)
         }

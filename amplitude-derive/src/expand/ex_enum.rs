@@ -4,7 +4,7 @@ use syn::{DataEnum, Fields, Generics, Ident, Variant};
 
 use crate::attrs::AttrOptions;
 
-use super::prop::{event_props, into_event_props};
+use super::prop::{event_props, into_event_props, FieldProp};
 
 pub fn event_enum(ident: Ident, generics: Generics, s: DataEnum) -> syn::Result<TokenStream> {
     let mut name_match_variants = Vec::new();
@@ -71,15 +71,22 @@ impl VariantMatch {
         (name_variant, props_variant)
     }
 
-    fn named_fields<'a, F: Iterator<Item = (&'a Ident, AttrOptions)>>(
+    fn named_fields<'a, F: Iterator<Item = FieldProp<'a>>>(
         ident: &Ident,
         f: F,
         attrs: &AttrOptions,
     ) -> (VariantMatch, VariantMatch) {
         let left_hand_match = quote! { Self::#ident };
-        let (ignored, named): (Vec<_>, Vec<_>) = f
-            .map(|(ident, opts)| (quote!(#ident: _), (ident, opts)))
-            .unzip();
+        let mut ignored = Vec::new();
+        let mut idents = Vec::new();
+        let mut field_props = Vec::new();
+        for p in f {
+            let ident = p.ident;
+            ignored.push(quote!(#ident: _));
+            idents.push(ident);
+            field_props.push(p);
+        }
+
         let name_variant = Self::name_variant(
             quote! {
                 #left_hand_match{
@@ -89,12 +96,11 @@ impl VariantMatch {
             ident,
             attrs,
         );
-        let props = event_props(named.iter(), false);
-        let named_idents = named.iter().map(|(i, _)| i);
+        let props = event_props(field_props.iter(), false);
         let props_variant = Self {
             left_hand_side: quote! {
                #left_hand_match{
-                    #(#named_idents,)*
+                    #(#idents,)*
                 }
             },
             right_hand_side: props,
@@ -139,11 +145,7 @@ fn variant_match_builder(v: &Variant) -> syn::Result<(VariantMatch, VariantMatch
             let fields = f
                 .named
                 .iter()
-                .map(|f| {
-                    let ident = f.ident.as_ref().unwrap();
-                    let attrs = AttrOptions::parse(&f.attrs)?;
-                    Ok((ident, attrs))
-                })
+                .map(FieldProp::try_from)
                 .collect::<syn::Result<Vec<_>>>()?;
             VariantMatch::named_fields(ident, fields.into_iter(), &attrs)
         }

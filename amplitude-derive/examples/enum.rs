@@ -6,9 +6,20 @@ pub struct ButtonPressed {
 }
 
 #[derive(Event)]
+pub struct ButtonLinked {
+    link: String,
+}
+
+#[derive(Event)]
 pub enum MyEvents {
-    ButtonPressed(ButtonPressed),
-    EnemyHit { damage: u8, enemy_name: String },
+    ButtonPressed(ButtonPressed), // Will add up all into event props
+    ButtonInteracted(ButtonPressed, ButtonLinked),
+    #[ampli(rename = "enemy_hit")]
+    EnemyHit {
+        value: u8,
+        #[ampli(rename = "metadata")]
+        meta_data: Option<String>,
+    },
 }
 
 fn main() {

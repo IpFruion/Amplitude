@@ -12,8 +12,7 @@ The three pieces of this SDK are
 
 ## TODO:
 
-1. Handle `Option<T: Into<PropertyValue>>` as a `value` in `Property`. If it is `None` don't add to `property list`.
-2. Implement `tracing-amplitude` library to have the necessary events thrown and layer to capture events.
-3. Add `amplitude-wrapper` to generate the tracking plan as an `enum` that derives `Event`
-4. Pipeline
-5. Tests and Docs
+1. Implement `tracing-amplitude` library to have the necessary events thrown and layer to capture events.
+2. Add `amplitude-wrapper` to generate the tracking plan as an `enum` that derives `Event`
+3. Pipeline
+4. Tests and Docs
